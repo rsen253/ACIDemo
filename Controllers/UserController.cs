@@ -9,9 +9,9 @@ namespace ACIDemo.Controllers;
 public class UserController(IUserRepository _userRepo) : ControllerBase
 {
     [HttpPost("CreateListOfuser")]
-    public async Task<IActionResult> CreateListOfuser([FromBody] List<UserDto> users)
+    public async Task<IActionResult> CreateListOfuser()
     {
-        var result = await _userRepo.CreateListOfUsers(users);
+        var result = await _userRepo.CreateListOfUsers();
         return new OkObjectResult(result);
     }
 

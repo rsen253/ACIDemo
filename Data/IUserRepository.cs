@@ -1,5 +1,6 @@
 ﻿using ACIDemo.Dtos;
 using ACIDemo.Models;
+using Bogus;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,19 +12,21 @@ public interface IUserRepository
 
     Task<bool> CreateNewUser(UserDto user);
 
-    Task<string> CreateListOfUsers(List<UserDto> users);
+    Task<string> CreateListOfUsers();
 
     Task<UserResult> GetUserDetailsById(Guid id);
 }
 
 public sealed class UserRepository(UserDbContext context) : IUserRepository
 {
-    public async Task<string> CreateListOfUsers(List<UserDto> users)
+    public async Task<string> CreateListOfUsers()
     {
-        var usersList = users.Adapt<List<User>>();
+        var faker = GetUserGenerator();
+        var generatedData = faker.Generate(5);
+        var usersList = generatedData.Adapt<List<User>>();
         await context.Users.AddRangeAsync(usersList);
         await context.SaveChangesAsync();
-        return $"{users.Count} user has been inserted successfully";
+        return $"{generatedData.Count} user has been inserted successfully";
     }
 
     public async Task<bool> CreateNewUser(UserDto user)
@@ -44,5 +47,14 @@ public sealed class UserRepository(UserDbContext context) : IUserRepository
     {
         var result = await context.Users.FirstOrDefaultAsync(x => x.Id == id);
         return result.Adapt<UserResult>();
+    }
+
+    private static Faker<UserDto> GetUserGenerator()
+    {
+        return new Faker<UserDto>()
+            .RuleFor(e => e.Id, _ => Guid.NewGuid())
+            .RuleFor(e => e.FirstName, f => f.Name.FirstName())
+            .RuleFor(e => e.Email, (f, e) => f.Internet.Email(e.FirstName))
+            .RuleFor(e => e.Country, e => e.Address.Country());
     }
 }
